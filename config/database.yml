@@ -82,5 +82,5 @@ test:
 production:
   <<: *default
   database: evently_production
-  username: evently
-  password: <%= ENV["EVENTLY_DATABASE_PASSWORD"] %>
+  username: <%= ENV["DATABASE_USERNAME"] %>
+  password: <%= ENV["DATABASE_PASSWORD"] %>
