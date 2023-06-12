@@ -1,9 +1,9 @@
 {
   "development": {
-    "username": "postgres",
-    "password": "test",
+    "username": "root",
+    "password": "root123",
     "database": "event_management",
-    "host": "localhost",
+    "host": "postgres",
     "dialect": "postgres",
     "port": 5432,
     "pool": {
@@ -14,13 +14,11 @@
       "idleTimeoutMillis": 0,
       "connectionTimeoutMillis": 0
     },
-    "dialectOptions": {
-
-    }
+    "dialectOptions": {}
   },
   "test": {
-    "username": "postgres",
-    "password": "test",
+    "username": "root",
+    "password": "root123",
     "database": "event_management",
     "host": "127.0.0.1",
     "dialect": "postgres"

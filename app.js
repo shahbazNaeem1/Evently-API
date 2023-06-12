@@ -1,15 +1,14 @@
 const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
-const db = require("./models");
-const job = require("./cron-job");
 const cookie = require("cookie-parser");
+const db = require("./models");
 
 const adminController = require("./controllers/Admin.controller");
 
 const app = express();
 const corsOption = {
-  origin: "http://localhost:3000",
+  origin: process.env.APP_URL,
   credentials: true,
 };
 const port = process.env.PORT || 5000;
