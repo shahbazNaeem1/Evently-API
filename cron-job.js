@@ -18,7 +18,18 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const job = schedule.scheduleJob("59 23 * * *", async function () {
+const SCOPES = [
+  "https://www.googleapis.com/auth/calendar",
+  "https://www.googleapis.com/auth/calendar.events",
+];
+
+const calendar = google.calendar({
+  version: "v3",
+  auth: process.env.API_KEY,
+  scope: SCOPES,
+});
+
+const job = schedule.scheduleJob("45 20 * * *", async function () {
   console.log("INSIDE JOB");
   const oauth2Client = new google.auth.OAuth2(
     process.env.CLIENT_KEY,
@@ -28,61 +39,113 @@ const job = schedule.scheduleJob("59 23 * * *", async function () {
   console.log("JOB EXECUTING");
   const events = await Event.findAll({});
 
-  events.map((event) => {
-    schedule.scheduleJob(
-      `1 * * ${moment(event.dataValues.registrationDeadline).date()} ${
-        moment(event.dataValues.registrationDeadline).month() + 1
-      } *`,
-      async function (date) {
-        console.log("DEADLINE EXECUTED");
+  // events.map((event) => {
+  //   schedule.scheduleJob(
+  //     `1 * * ${moment(event.dataValues.registrationDeadline).date()} ${
+  //       moment(event.dataValues.registrationDeadline).month() + 1
+  //     } *`,
+  //     async function (date) {
+  //       console.log("DEADLINE EXECUTED");
 
-        oauth2Client.setCredentials({
-          refresh_token: process.env.refresh_token,
-        });
-        oauth2Client.refreshAccessToken(function (err, tokens) {
-          oauth2Client.setCredentials(tokens);
-        });
+  //       oauth2Client.setCredentials({
+  //         refresh_token: process.env.refresh_token,
+  //       });
+  //       oauth2Client.refreshAccessToken(function (err, tokens) {
+  //         oauth2Client.setCredentials(tokens);
+  //       });
 
-        const response = await calendar.events.get({
-          auth: oauth2Client,
-          calendarId: "primary",
-          eventId: event.dataValues.eventId,
-        });
+  //       const response = await calendar.events.get({
+  //         auth: oauth2Client,
+  //         calendarId: "primary",
+  //         eventId: event.dataValues.eventId,
+  //       });
 
-        response?.data?.attendees?.map((att) => {
-          if (att.responseStatus === "accepted") {
-            Invitee.findOne({
-              where: { email: att.email, eventId: event.dataValues.id },
-            }).then(async (e) => {
-              let img = await QRCode.toDataURL(
-                `${att.email} ${event.dataValues.id}`
-              );
+  //       response?.data?.attendees?.map((att) => {
+  //         if (att.responseStatus === "accepted") {
+  //           Invitee.findOne({
+  //             where: { email: att.email, eventId: event.dataValues.id },
+  //           }).then(async (e) => {
+  //             let img = await QRCode.toDataURL(
+  //               `${att.email} ${event.dataValues.id}`
+  //             );
 
-              e.qrCode = img;
-              await e.save();
-              transporter.sendMail(
-                {
-                  from: process.env.user,
-                  to: att.email,
-                  subject: event.dataValues.title,
-                  attachDataUrls: true,
-                  html:
-                    'The QR Code for Event is <br/> <br/> <img src="' +
-                    img +
-                    '">',
-                },
-                (error, info) => {
-                  if (error) {
-                    return console.log(error);
-                  }
-                  console.log("Message sent");
-                }
-              );
-            });
-          }
+  //             e.qrCode = img;
+  //             await e.save();
+  //             transporter.sendMail(
+  //               {
+  //                 from: process.env.user,
+  //                 to: att.email,
+  //                 subject: event.dataValues.title,
+  //                 attachDataUrls: true,
+  //                 html:
+  //                   'The QR Code for Event is <br/> <br/> <img src="' +
+  //                   img +
+  //                   '">',
+  //               },
+  //               (error, info) => {
+  //                 if (error) {
+  //                   return console.log(error);
+  //                 }
+  //                 console.log("Message sent");
+  //               }
+  //             );
+  //           });
+  //         }
+  //       });
+  //     }
+  //   );
+  // });
+
+  events?.map(async (event) => {
+    if (
+      moment(event.dataValues.registrationDeadline).format("DD-MM-YYYY") ===
+      moment().format("DD-MM-YYYY")
+    )
+      console.log("DEADLINE EXECUTED");
+
+    oauth2Client.setCredentials({
+      refresh_token: process.env.refresh_token,
+    });
+    oauth2Client.refreshAccessToken(function (err, tokens) {
+      oauth2Client.setCredentials(tokens);
+    });
+
+    const response = await calendar.events.get({
+      auth: oauth2Client,
+      calendarId: "primary",
+      eventId: event.dataValues.eventId,
+    });
+
+    response?.data?.attendees?.map((att) => {
+      if (att.responseStatus === "accepted") {
+        Invitee.findOne({
+          where: { email: att.email, eventId: event.dataValues.id },
+        }).then(async (e) => {
+          let img = await QRCode.toDataURL(
+            `${att.email} ${event.dataValues.id}`
+          );
+
+          e.qrCode = img;
+          await e.save();
+          transporter.sendMail(
+            {
+              from: process.env.user,
+              to: att.email,
+              subject: event.dataValues.title,
+              attachDataUrls: true,
+              html:
+                'The QR Code for Event is <br/> <br/> <img src="' + img + '">',
+            },
+            (error, info) => {
+              if (error) {
+                return console.log(error);
+              }
+              console.log("Message sent");
+            }
+          );
         });
       }
-    );
+    });
   });
 });
 

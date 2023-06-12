@@ -7,6 +7,7 @@ const { google } = require("googleapis");
 const QRCode = require("qrcode");
 const moment = require("moment");
 const Sequelize = require("sequelize");
+const { default: axios } = require("axios");
 const Op = Sequelize.Op;
 
 dotenv.config();
@@ -21,7 +22,13 @@ const SCOPES = [
 const oauth2Client = new google.auth.OAuth2(
   process.env.CLIENT_KEY,
   process.env.CLIENT_SECRET,
-  "http://localhost:5000/api/admin/auth/success"
+  "http://localhost:3000"
+);
+
+const expoOauth2Client = new google.auth.OAuth2(
+  process.env.EXPO_CLIENT_KEY,
+  process.env.EXPO_CLIENT_SECRET,
+  "https://auth.expo.io/@hassaan123/qr-scanner"
 );
 
 adminRouter.get("/google", (req, res) => {
@@ -29,15 +36,173 @@ adminRouter.get("/google", (req, res) => {
     access_type: "offline",
     scope: SCOPES,
   });
+  console.log("url", url);
   res.redirect(url);
 });
 
+adminRouter.post("/auth/token", async (req, res) => {
+  try {
+    const { tokens } = await oauth2Client.getToken(req.body.response.code);
+    console.log("tokens", tokens);
+    oauth2Client.setCredentials(tokens);
+    return axios
+      .get("https://www.googleapis.com/oauth2/v1/userinfo", {
+        headers: {
+          Authorization: `Bearer ${tokens.access_token}`,
+        },
+      })
+      .then(async (response) => {
+        console.log(response.data);
+        try {
+          const existingUser = await Users.findOne({
+            where: { email: response.data.email },
+          }).then(async (user) => {
+            if (user) {
+              console.log(tokens.refresh_token);
+              res.cookie("refreshToken", tokens.refresh_token, {
+                path: "/",
+                httpOnly: true,
+                maxAge: 60 * 60 * 24 * 30 * 1000,
+                sameSite: "lax",
+                overwrite: true,
+                domain: "localhost",
+              });
+              console.log("req.cookies", req.cookies);
+
+              return res.status(201).send({
+                message: "User Logged in Successfully",
+                user: {
+                  id: user.id,
+                  username: user.username,
+                  email: user.email,
+                  phone: user && user.phone ? user.phone : "",
+                  token: generateToken(user.dataValues),
+                  tokens: tokens.access_token,
+                },
+              });
+            } else {
+              const user = await Users.create({
+                username: response.data.givenName,
+                email: response.data.email,
+                phone: "",
+              });
+              res.cookie("refreshToken", tokens.refresh_token, {
+                path: "/",
+                httpOnly: true,
+                maxAge: 60 * 60 * 24 * 30 * 1000,
+                sameSite: "lax",
+                overwrite: true,
+                domain: "localhost",
+              });
+              return res.status(201).send({
+                message: "User Logged in Successfully",
+                user: {
+                  id: user.id,
+                  username: user.username,
+                  email: user.email,
+                  phone: user && user.phone ? user.phone : "",
+                  token: generateToken(user.dataValues),
+                  tokens: tokens.access_token,
+                },
+              });
+            }
+          });
+        } catch (err) {
+          console.log(err);
+          return res.status(500).send(err);
+        }
+      })
+      .catch((error) => {
+        console.error(error);
+      });
+  } catch (e) {
+    console.log("EEE", e);
+  }
+});
+
+adminRouter.post("/auth/token/expo", async (req, res) => {
+  console.log(req.body);
+  try {
+    const { tokens } = await expoOauth2Client.getToken(req.body.response);
+    console.log("tokens", tokens);
+    expoOauth2Client.setCredentials(tokens);
+    return axios
+      .get("https://www.googleapis.com/oauth2/v1/userinfo", {
+        headers: {
+          Authorization: `Bearer ${tokens.access_token}`,
+        },
+      })
+      .then(async (response) => {
+        console.log(response.data);
+        try {
+          const existingUser = await Users.findOne({
+            where: { email: response.data.email },
+          }).then(async (user) => {
+            if (user) {
+              console.log(tokens.refresh_token);
+              res.cookie("refreshToken", tokens.refresh_token, {
+                path: "/",
+                httpOnly: true,
+                maxAge: 60 * 60 * 24 * 30 * 1000,
+                sameSite: "lax",
+                overwrite: true,
+                domain: "localhost",
+              });
+              console.log("req.cookies", req.cookies);
+              return res.status(201).send({
+                message: "User Logged in Successfully",
+                user: {
+                  id: user.id,
+                  username: user.username,
+                  email: user.email,
+                  phone: user && user.phone ? user.phone : "",
+                  token: generateToken(user.dataValues),
+                  tokens: tokens.access_token,
+                },
+              });
+            } else {
+              const user = await Users.create({
+                username: response.data.givenName,
+                email: response.data.email,
+                phone: "",
+              });
+              res.cookie("refreshToken", tokens.refresh_token, {
+                path: "/",
+                httpOnly: true,
+                maxAge: 60 * 60 * 24 * 30 * 1000,
+                sameSite: "lax",
+                overwrite: true,
+                domain: "localhost",
+              });
+              return res.status(201).send({
+                message: "User Logged in Successfully",
+                user: {
+                  id: user.id,
+                  username: user.username,
+                  email: user.email,
+                  phone: user && user.phone ? user.phone : "",
+                  token: generateToken(user.dataValues),
+                  tokens: tokens.access_token,
+                },
+              });
+            }
+          });
+        } catch (err) {
+          console.log(err);
+          return res.status(500).send(err);
+        }
+      })
+      .catch((error) => {
+        console.error(error);
+      });
+  } catch (e) {
+    console.log("EEE", e);
+  }
+});
+
 adminRouter.get("/auth/success", async (req, res) => {
-  console.log(req.query.code);
-  const { tokens } = await oauth2Client.getToken(req.query.code);
-  console.log("tokens", tokens);
-  oauth2Client.setCredentials(tokens);
-  res.send("You are now authenticated");
+  console.log("SUCCESS");
+  res.send("success");
 });
 
 const calendar = google.calendar({
@@ -53,14 +218,9 @@ adminRouter.post(
     const { givenName, email } = req.body.response.profileObj;
     console.log("req.body.response.profileObj", req.body.response);
 
-    // oauth2Client.generateAuthUrl({
-    //   access_type: "offline",
-    //   scope: SCOPES,
-    // });
-
     const token = {
       access_token: req.body.response.accessToken,
-      refresh_token: process.env.refresh_token,
+      refresh_token: req.cookies.refreshToken,
       scope:
         "https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar",
       token_type: "Bearer",
@@ -116,12 +276,12 @@ adminRouter.post(
 
 adminRouter.post(
   "/createEvent",
-  // isAuth,
+  isAuth,
   expressAsyncHandler(async (req, res) => {
     console.log("createEvent", req.body);
     try {
       oauth2Client.setCredentials({
-        refresh_token: process.env.refresh_token,
+        refresh_token: req.cookies.refreshToken,
       });
       oauth2Client.refreshAccessToken(function (err, tokens) {
         oauth2Client.setCredentials(tokens);
@@ -187,7 +347,7 @@ adminRouter.post(
             venue: req.body.venue,
             registrationDeadline: req.body.registrationDeadline,
           });
-          event.data.attendees.map(async (attendee) => {
+          event?.data?.attendees?.map(async (attendee) => {
             await Invitee.create({
               email: attendee.email,
               eventId: e.dataValues.id,
@@ -208,12 +368,12 @@ adminRouter.post(
 
 adminRouter.post(
   "/updateEvent/:id",
-  // isAuth,
+  isAuth,
   expressAsyncHandler(async (req, res) => {
     console.log("updateEvent", req.body);
     try {
       oauth2Client.setCredentials({
-        refresh_token: process.env.refresh_token,
+        refresh_token: req.cookies.refreshToken,
       });
       oauth2Client.refreshAccessToken(function (err, tokens) {
         oauth2Client.setCredentials(tokens);
@@ -290,7 +450,7 @@ adminRouter.post(
             }
           );
 
-          req.body.attendees.map(async (attendee) => {
+          req.body?.attendees?.map(async (attendee) => {
             const exists = invite.find(
               (email) => email.dataValues.email === attendee.email
             );
@@ -362,9 +522,9 @@ adminRouter.get("/eventshappeningnow", async (req, res) => {
   res.send(events);
 });
 
-adminRouter.post("/delete/:id", async (req, res) => {
+adminRouter.post("/delete/:id", isAuth, async (req, res) => {
   oauth2Client.setCredentials({
-    refresh_token: process.env.refresh_token,
+    refresh_token: req.cookies.refreshToken,
   });
   oauth2Client.refreshAccessToken(function (err, tokens) {
     oauth2Client.setCredentials(tokens);
@@ -399,10 +559,10 @@ adminRouter.post("/delete/:id", async (req, res) => {
   );
 });
 
-adminRouter.get("/event/:id", async (req, res) => {
+adminRouter.get("/event/:id", isAuth, async (req, res) => {
   let event = await Event.findOne({ where: { id: req.params.id } });
   oauth2Client.setCredentials({
-    refresh_token: process.env.refresh_token,
+    refresh_token: req.cookies.refreshToken,
   });
   oauth2Client.refreshAccessToken(function (err, tokens) {
     oauth2Client.setCredentials(tokens);
@@ -456,5 +616,10 @@ adminRouter.post(
     }
   })
 );
+
+adminRouter.get("/logout", function (req, res) {
+  res.clearCookie("refreshToken");
+  res.status(201).send({ message: "Logout successfully" });
+});
 
 module.exports = adminRouter;
