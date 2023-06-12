@@ -29,7 +29,7 @@ const calendar = google.calendar({
   scope: SCOPES,
 });
 
-const job = schedule.scheduleJob("32 00 * * *", async function (req, res) {
+const job = schedule.scheduleJob("47 20 * * *", async function (req, res) {
   console.log("INSIDE JOB");
   const oauth2Client = new google.auth.OAuth2(
     process.env.CLIENT_KEY,
@@ -117,6 +117,7 @@ const job = schedule.scheduleJob("32 00 * * *", async function (req, res) {
       });
 
       response?.data?.attendees?.map((att) => {
+        console.log("att", att);
         if (att.responseStatus === "accepted") {
           Invitee.findOne({
             where: { email: att.email, eventId: event.dataValues.id },

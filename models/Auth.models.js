@@ -25,6 +25,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       alloWNull: false,
     },
+    refreshToken: { type: DataTypes.STRING },
   });
 
   return Users;

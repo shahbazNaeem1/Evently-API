@@ -34,7 +34,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
     },
     registrationDeadline: {
-      type: DataTypes.DATEONLY,
+      type: "TIMESTAMP",
       allowNull: false,
     },
   });
