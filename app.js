@@ -51,12 +51,12 @@ var event = {
     timeZone: "Asia/Dhaka",
   },
   creator: {
-    email: "hassaan.ashraf118@gmail.com",
+    email: process.env.email,
   },
   organizer: {
-    email: "hassaan.ashraf118@gmail.com",
+    email: process.env.email,
   },
-  attendees: [], //{ email: "saad117218@gmail.com" }
+  attendees: [],
   reminders: {
     useDefault: false,
     overrides: [

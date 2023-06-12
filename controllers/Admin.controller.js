@@ -12,12 +12,12 @@ const adminRouter = express.Router();
 
 const blogger = google.blogger({
   version: "v3",
-  auth: "AIzaSyC9Y_pJPkIiHC8q5b5HIFYSMm1qt-C8CeQ",
+  auth: process.env.API_KEY,
 });
 
 const oauth2Client = new google.auth.OAuth2(
-  "162519831332-32p47ro0kkv76jjfm11ab5161ls43gsl.apps.googleusercontent.com",
-  "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",
+  process.env.CLIENT_KEY,
+  process.env.CLIENT_SECRET,
   "http://localhost:5000"
 );
 
