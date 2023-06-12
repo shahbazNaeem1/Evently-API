@@ -18,7 +18,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
     },
     eventDate: {
-      type: DataTypes.DATE,
+      type: DataTypes.DATEONLY,
       allowNull: false,
     },
     eventStartTime: {
@@ -34,7 +34,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
     },
     registrationDeadline: {
-      type: "TIMESTAMP",
+      type: DataTypes.DATEONLY,
       allowNull: false,
     },
   });

@@ -44,7 +44,7 @@ Object.keys(db).forEach((modelName) => {
   }
 });
 
-db.Event.hasMany(db.Invitee, { foreignKey: "id" });
+db.Event.hasMany(db.Invitee, { foreignKey: "eventId", targetKey: "id" });
 db.Event.hasMany(db.Image, { foreignKey: "id" });
 
 db.sequelize = sequelize;

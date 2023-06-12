@@ -3,8 +3,20 @@
     "username": "postgres",
     "password": "test",
     "database": "event_management",
-    "host": "127.0.0.1",
-    "dialect": "postgres"
+    "host": "localhost",
+    "dialect": "postgres",
+    "port": 5432,
+    "pool": {
+      "max": 5,
+      "min": 0,
+      "idle": 300000,
+      "acquire": 300000,
+      "idleTimeoutMillis": 0,
+      "connectionTimeoutMillis": 0
+    },
+    "dialectOptions": {
+
+    }
   },
   "test": {
     "username": "postgres",
